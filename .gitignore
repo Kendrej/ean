@@ -1,0 +1,20 @@
+# Katalogi build/debug/release
+build/
+debug/
+release/
+
+# Pliki tymczasowe edytora
+.vscode/
+.qmake.stash
+
+# Pliki wynikowe
+*.exe
+*.o
+*.obj
+*.dll
+*.so
+*.a
+*.log
+
+# Katalog boost (lokalna kopia)
+boost/

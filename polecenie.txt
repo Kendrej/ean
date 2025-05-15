@@ -1,0 +1,9 @@
+7. Rozwiązywanie układu równań liniowych z macierzą symetryczną oraz z macierzą
+trójdiagonalną metodą Crouta
+
+Literatura:
+Z. Fortuna, B. Macukow, J. Wąsowski, Metody numeryczne, WNT, Warszawa
+A. Marciniak, D. Gregulec, J. Kaczmarek, Podstawowe procedury numeryczne w języku Turbo Pascal,
+Wydawnictwo NAKOM, Poznań 2000
+
+pomocna biblioteka to Interval.h
