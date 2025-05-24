@@ -62,8 +62,10 @@ MainWindow::MainWindow(QWidget *parent) : QWidget(parent)
                 Vector<double> x;
                 int st = 0;
 
-                if (sym) {
-                    x = Solver::solveCroutSymmetric(A,b);
+                if (sym) {                                 // ← nic nie zmieniamy
+                    auto res = Solver::solveCroutSymmetric(A,b);
+                    x  = std::move(res.x);
+                    st = res.st;
                 } else {
                     auto res = Solver::solveCroutTridiagonal(A,b);
                     x  = std::move(res.x);
@@ -99,8 +101,10 @@ MainWindow::MainWindow(QWidget *parent) : QWidget(parent)
                 Vector<mpfr::mpreal> x;
                 int st = 0;
 
-                if (sym) {
-                    x = Solver::solveCroutSymmetric(A,b);
+                if (sym) {                                 // ← nic nie zmieniamy
+                    auto res = Solver::solveCroutSymmetric(A,b);
+                    x  = std::move(res.x);
+                    st = res.st;
                 } else {
                     auto res = Solver::solveCroutTridiagonal(A,b);
                     x  = std::move(res.x);
@@ -134,13 +138,17 @@ MainWindow::MainWindow(QWidget *parent) : QWidget(parent)
                 Vector<IntervalMP> x;
                 int st = 0;
 
-                if (sym) {
-                    x = Solver::solveCroutSymmetric(A,b);
+                
+                if (sym) {                                 // ← nic nie zmieniamy
+                    auto res = Solver::solveCroutSymmetric(A,b);
+                    x  = std::move(res.x);
+                    st = res.st;
                 } else {
                     auto res = Solver::solveCroutTridiagonal(A,b);
                     x  = std::move(res.x);
                     st = res.st;
                 }
+
                 if (st) {
                     resultDisplay->setText(
                         QString("Układ osobliwy – pivot zerowy w kroku %1").arg(st));

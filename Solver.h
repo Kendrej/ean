@@ -1,7 +1,4 @@
 #pragma once
-/* ===========================================================
- *  Solver.h
- *  ========================================================= */
 #include <vector>
 #include "mpreal.h"
 #include <boost/numeric/interval.hpp>
@@ -11,7 +8,7 @@
 using mpfr::mpreal;
 using namespace boost::numeric;
 
-/* --------- typ przedziału wysokiej precyzji ---------------- */
+/* --- przedział mp-real --------------------------------------------------- */
 using IntervalMP = interval<
     mpreal,
     interval_lib::policies<
@@ -20,33 +17,37 @@ using IntervalMP = interval<
     >
 >;
 
-/* --------- aliasy macierz / wektor ------------------------- */
+/* --- aliasy -------------------------------------------------------------- */
 template<typename T>
 using Matrix = std::vector<std::vector<T>>;
 
 template<typename T>
 using Vector = std::vector<T>;
 
-/* --------- wynik solvera trójdiagonalnego ------------------ */
+/* --- wynik z kodem statusu ---------------------------------------------- */
 template<typename T>
 struct TriResult
 {
-    Vector<T> x;   // rozwiązanie (jeśli st == 0)
-    int       st;  // 0 = OK; k>0 = zerowy pivot w kroku k (1-based)
+    Vector<T> x;   // wektor rozwiązań (albo 0 przy błędzie)
+    int       st;  // 0 OK,  k>0 – zerowy / niedodatni pivot w kolumnie k
 };
 
-/* --------- klasa z metodami statycznymi -------------------- */
-class Solver {
+/* ======================================================================== */
+class Solver
+{
 public:
-    /* pełna macierz (Crout) */
+    /* 1) pełna macierz – bez kodu statusu */
     template<typename T>
-    static Vector<T> solveCrout(const Matrix<T>& A, const Vector<T>& b);
+    static Vector<T>
+    solveCrout(const Matrix<T>& A, const Vector<T>& b);
 
-    /* pełna macierz symetryczna (Crout) */
+    /* 2) pełna macierz SYMETRYCZNA – z kodem statusu (Ta część zmieniona) */
     template<typename T>
-    static Vector<T> solveCroutSymmetric(const Matrix<T>& A, const Vector<T>& b);
+    static TriResult<T>
+    solveCroutSymmetric(const Matrix<T>& A, const Vector<T>& b);
 
-    /* macierz trójdiagonalna (Crout) + status */
+    /* 3) macierz trójdiagonalna – z kodem statusu */
     template<typename T>
-    static TriResult<T> solveCroutTridiagonal(const Matrix<T>& A, const Vector<T>& b);
+    static TriResult<T>
+    solveCroutTridiagonal(const Matrix<T>& A, const Vector<T>& b);
 };
