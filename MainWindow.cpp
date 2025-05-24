@@ -1,124 +1,166 @@
+/* ===========================================================
+ *  MainWindow.cpp  –  pełna aktualna wersja
+ * ========================================================= */
 #include "MainWindow.h"
 #include "Parser.h"
 #include "Solver.h"
+
+#include <QGroupBox>          // ← potrzebny nagłówek
 #include <stdexcept>
 #include <sstream>
+#include <iomanip>
+
 #include <mpreal.h>
-#include <QGroupBox>      //  << DODAJ TO
 #include <boost/numeric/interval.hpp>
 #include <boost/numeric/interval/rounded_transc.hpp>
 #include <boost/numeric/interval/policies.hpp>
 
 using namespace boost::numeric;
 using IntervalMP = interval<
-    mpfr::mpreal,
-    interval_lib::policies<
-        interval_lib::save_state<interval_lib::rounded_transc_std<mpfr::mpreal>>,
-        interval_lib::checking_no_nan<mpfr::mpreal>
-    >
+        mpfr::mpreal,
+        interval_lib::policies<
+            interval_lib::save_state<interval_lib::rounded_transc_std<mpfr::mpreal>>,
+            interval_lib::checking_no_nan<mpfr::mpreal>
+        >
 >;
 
-MainWindow::MainWindow(QWidget *parent)
-    : QWidget(parent)
+/* -----------------------------------------------------------
+   Pomocnik: „ładny” wykładnik, np.  E-0001
+   ----------------------------------------------------------- */
+static std::string prettifyExp(std::string s)
+{
+    auto pos = s.find('E');
+    if (pos == std::string::npos) return std::move(s);
+
+    char sign = s[pos+1];                  // '+' lub '-'
+    std::string exp = s.substr(pos+2);     // np. "1"  →  "001"
+    while (exp.length() < 3) exp = "0" + exp;
+
+    return s.substr(0,pos+2) + exp;        // składamy
+}
+
+/* ----------------------------------------------------------- */
+
+MainWindow::MainWindow(QWidget *parent) : QWidget(parent)
 {
     setupUI();
     createMatrixInputs(3);
 
-    /* ===================================================
-       GŁÓWNY LAMBDA-HANDLER PRZYCISKU  „Rozwiąż”
-       =================================================== */
-    connect(solveButton, &QPushButton::clicked, this, [this]() {
-        int     size     = matrixSizeSpinBox->value();
-        QString dataType = typeSelector->currentText();
+    /* ---------- klik „Rozwiąż” ------------------------------ */
+    connect(solveButton, &QPushButton::clicked, this, [this]()
+    {
+        const bool sym = radioSymmetric->isChecked();
+        const QString dataType = typeSelector->currentText();
 
         try {
-        /* -------------------------------------------------
-           1.  TYP  double
-           ------------------------------------------------- */
+        /* ======= 1)  double ================================= */
             if (dataType.contains("double"))
             {
                 auto A = Parser::parseMatrix<double>(matrixAInputs);
                 auto b = Parser::parseVector<double>(vectorBInputs);
 
-                auto res = Solver::solveCroutTridiagonal(A, b);   // *** zmiana ***
-                if (radioSymmetric->isChecked())
-                    res = { Solver::solveCroutSymmetric(A,b) , 0 }; // sym = brak st
+                Vector<double> x;
+                int st = 0;
 
-                if (res.st != 0) {                                // *** zmiana ***
+                if (sym) {
+                    x = Solver::solveCroutSymmetric(A,b);
+                } else {
+                    auto res = Solver::solveCroutTridiagonal(A,b);
+                    x  = std::move(res.x);
+                    st = res.st;
+                }
+                if (st) {                       /* zerowy pivot */
                     resultDisplay->setText(
-                        QString("Układ osobliwy – pivot zerowy w kroku %1")
-                        .arg(res.st));
+                        QString("Układ osobliwy – pivot zerowy w kroku %1").arg(st));
                     return;
                 }
-                const auto& x = res.x;                             // *** zmiana ***
 
-                QString result;
-                for (size_t i = 0; i < x.size(); ++i)
-                    result += QString("x%1 = %2\n").arg(i+1).arg(x[i]);
-                resultDisplay->setText(result);
+                /* format naukowy E±000k */
+                QString out;
+                for (size_t i=0;i<x.size();++i)
+                {
+                    std::stringstream ss;
+                    ss.setf(std::ios::scientific | std::ios::uppercase);
+                    ss << std::setprecision(13) << x[i];
+                    out += QString("d[%1] = %2\n")
+                              .arg(i+1)
+                              .arg(QString::fromStdString(prettifyExp(ss.str())));
+                }
+                resultDisplay->setText(out);
             }
-        /* -------------------------------------------------
-           2.  TYP  mpreal  (wysoka precyzja)
-           ------------------------------------------------- */
+
+        /* ======= 2)  mpreal  ================================= */
             else if (dataType.contains("mpreal") &&
                      !dataType.contains("interval"))
             {
                 auto A = Parser::parseMatrix<mpfr::mpreal>(matrixAInputs);
                 auto b = Parser::parseVector<mpfr::mpreal>(vectorBInputs);
 
-                auto res = Solver::solveCroutTridiagonal(A, b);   // *** zmiana ***
-                if (radioSymmetric->isChecked())
-                    res = { Solver::solveCroutSymmetric(A,b) , 0 };
+                Vector<mpfr::mpreal> x;
+                int st = 0;
 
-                if (res.st != 0) {
+                if (sym) {
+                    x = Solver::solveCroutSymmetric(A,b);
+                } else {
+                    auto res = Solver::solveCroutTridiagonal(A,b);
+                    x  = std::move(res.x);
+                    st = res.st;
+                }
+                if (st) {
                     resultDisplay->setText(
-                        QString("Układ osobliwy – pivot zerowy w kroku %1")
-                        .arg(res.st));
+                        QString("Układ osobliwy – pivot zerowy w kroku %1").arg(st));
                     return;
                 }
-                const auto& x = res.x;
 
-                QString result;
-                for (size_t i = 0; i < x.size(); ++i) {
+                QString out;
+                for (size_t i=0;i<x.size();++i)
+                {
                     std::stringstream ss;
-                    ss.precision(50);
-                    ss << std::fixed << x[i];
-                    result += QString("x%1 = %2\n")
+                    ss.setf(std::ios::scientific | std::ios::uppercase);
+                    ss << std::setprecision(13) << x[i];
+                    out += QString("d[%1] = %2\n")
                               .arg(i+1)
-                              .arg(QString::fromStdString(ss.str()));
+                              .arg(QString::fromStdString(prettifyExp(ss.str())));
                 }
-                resultDisplay->setText(result);
+                resultDisplay->setText(out);
             }
-        /* -------------------------------------------------
-           3.  TYP  interval<mpreal>
-           ------------------------------------------------- */
+
+        /* ======= 3)  interval<mpreal>  ====================== */
             else if (dataType.contains("interval"))
             {
                 auto A = Parser::parseMatrix<IntervalMP>(matrixAInputs);
                 auto b = Parser::parseVector<IntervalMP>(vectorBInputs);
 
-                auto res = Solver::solveCroutTridiagonal(A, b);   // *** zmiana ***
-                if (radioSymmetric->isChecked())
-                    res = { Solver::solveCroutSymmetric(A,b) , 0 };
+                Vector<IntervalMP> x;
+                int st = 0;
 
-                if (res.st != 0) {
+                if (sym) {
+                    x = Solver::solveCroutSymmetric(A,b);
+                } else {
+                    auto res = Solver::solveCroutTridiagonal(A,b);
+                    x  = std::move(res.x);
+                    st = res.st;
+                }
+                if (st) {
                     resultDisplay->setText(
-                        QString("Układ osobliwy – pivot zerowy w kroku %1")
-                        .arg(res.st));
+                        QString("Układ osobliwy – pivot zerowy w kroku %1").arg(st));
                     return;
                 }
-                const auto& x = res.x;
 
-                QString result;
-                for (size_t i = 0; i < x.size(); ++i) {
-                    std::stringstream ss;
-                    ss.precision(30);
-                    ss << "[" << x[i].lower() << ", " << x[i].upper() << "]";
-                    result += QString("x%1 = %2\n")
-                              .arg(i+1)
-                              .arg(QString::fromStdString(ss.str()));
+                QString out;
+                for (size_t i=0;i<x.size();++i)
+                {
+                    std::stringstream ssL, ssU;
+                    ssL.setf(std::ios::scientific | std::ios::uppercase);
+                    ssU.setf(std::ios::scientific | std::ios::uppercase);
+                    ssL << std::setprecision(13) << x[i].lower();
+                    ssU << std::setprecision(13) << x[i].upper();
+                    out += QString("d[%1] = [%2 , %3]\n")
+                               .arg(i+1)
+                               .arg(QString::fromStdString(prettifyExp(ssL.str())))
+                               .arg(QString::fromStdString(prettifyExp(ssU.str())));
                 }
-                resultDisplay->setText(result);
+                resultDisplay->setText(out);
             }
         }
         catch (const std::exception& e) {
@@ -126,6 +168,7 @@ MainWindow::MainWindow(QWidget *parent)
         }
     });
 }
+
 
 
 MainWindow::~MainWindow() {}
