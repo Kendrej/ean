@@ -77,16 +77,16 @@ MainWindow::MainWindow(QWidget *parent) : QWidget(parent)
                     return;
                 }
 
-                /* format naukowy E±000k */
+                /* zwykły format fixed – 6 cyfr po kropce */
                 QString out;
-                for (size_t i=0;i<x.size();++i)
+                for (size_t i = 0; i < x.size(); ++i)
                 {
                     std::stringstream ss;
-                    ss.setf(std::ios::scientific | std::ios::uppercase);
-                    ss << std::setprecision(13) << x[i];
+                    ss.setf(std::ios::fixed);
+                    ss << std::setprecision(6) << x[i];          // ← 6 miejsc
                     out += QString("x[%1] = %2\n")
-                              .arg(i+1)
-                              .arg(QString::fromStdString(prettifyExp(ss.str())));
+                            .arg(i + 1)
+                            .arg(QString::fromStdString(ss.str()));
                 }
                 resultDisplay->setText(out);
             }
@@ -121,7 +121,7 @@ MainWindow::MainWindow(QWidget *parent) : QWidget(parent)
                 {
                     std::stringstream ss;
                     ss.setf(std::ios::scientific | std::ios::uppercase);
-                    ss << std::setprecision(13) << x[i];
+                    ss << std::setprecision(14) << x[i];
                     out += QString("x[%1] = %2\n")
                               .arg(i+1)
                               .arg(QString::fromStdString(prettifyExp(ss.str())));
