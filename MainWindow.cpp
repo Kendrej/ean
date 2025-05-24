@@ -82,7 +82,7 @@ MainWindow::MainWindow(QWidget *parent) : QWidget(parent)
                     std::stringstream ss;
                     ss.setf(std::ios::scientific | std::ios::uppercase);
                     ss << std::setprecision(13) << x[i];
-                    out += QString("d[%1] = %2\n")
+                    out += QString("x[%1] = %2\n")
                               .arg(i+1)
                               .arg(QString::fromStdString(prettifyExp(ss.str())));
                 }
@@ -118,7 +118,7 @@ MainWindow::MainWindow(QWidget *parent) : QWidget(parent)
                     std::stringstream ss;
                     ss.setf(std::ios::scientific | std::ios::uppercase);
                     ss << std::setprecision(13) << x[i];
-                    out += QString("d[%1] = %2\n")
+                    out += QString("x[%1] = %2\n")
                               .arg(i+1)
                               .arg(QString::fromStdString(prettifyExp(ss.str())));
                 }
@@ -155,7 +155,7 @@ MainWindow::MainWindow(QWidget *parent) : QWidget(parent)
                     ssU.setf(std::ios::scientific | std::ios::uppercase);
                     ssL << std::setprecision(13) << x[i].lower();
                     ssU << std::setprecision(13) << x[i].upper();
-                    out += QString("d[%1] = [%2 , %3]\n")
+                    out += QString("x[%1] = [%2 , %3]\n")
                                .arg(i+1)
                                .arg(QString::fromStdString(prettifyExp(ssL.str())))
                                .arg(QString::fromStdString(prettifyExp(ssU.str())));
