@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <sstream>
 #include <mpreal.h>
+#include <QGroupBox>      //  << DODAJ TO
 #include <boost/numeric/interval.hpp>
 #include <boost/numeric/interval/rounded_transc.hpp>
 #include <boost/numeric/interval/policies.hpp>
@@ -21,68 +22,106 @@ MainWindow::MainWindow(QWidget *parent)
     : QWidget(parent)
 {
     setupUI();
-    createMatrixInputs(3); // domyślny rozmiar
+    createMatrixInputs(3);
 
+    /* ===================================================
+       GŁÓWNY LAMBDA-HANDLER PRZYCISKU  „Rozwiąż”
+       =================================================== */
     connect(solveButton, &QPushButton::clicked, this, [this]() {
-        int size = matrixSizeSpinBox->value();
+        int     size     = matrixSizeSpinBox->value();
         QString dataType = typeSelector->currentText();
-        QString matrixType = matrixSelector->currentText();
 
         try {
-            if (dataType.contains("double")) {
+        /* -------------------------------------------------
+           1.  TYP  double
+           ------------------------------------------------- */
+            if (dataType.contains("double"))
+            {
                 auto A = Parser::parseMatrix<double>(matrixAInputs);
                 auto b = Parser::parseVector<double>(vectorBInputs);
-                std::vector<double> x;
-                if (matrixType.contains("Symetryczna")) {
-                    x = Solver::solveCroutSymmetric(A, b);
-                } else {
-                    x = Solver::solveCroutTridiagonal(A, b);
+
+                auto res = Solver::solveCroutTridiagonal(A, b);   // *** zmiana ***
+                if (radioSymmetric->isChecked())
+                    res = { Solver::solveCroutSymmetric(A,b) , 0 }; // sym = brak st
+
+                if (res.st != 0) {                                // *** zmiana ***
+                    resultDisplay->setText(
+                        QString("Układ osobliwy – pivot zerowy w kroku %1")
+                        .arg(res.st));
+                    return;
                 }
+                const auto& x = res.x;                             // *** zmiana ***
 
                 QString result;
                 for (size_t i = 0; i < x.size(); ++i)
-                    result += QString("x%1 = %2\n").arg(i + 1).arg(x[i]);
+                    result += QString("x%1 = %2\n").arg(i+1).arg(x[i]);
                 resultDisplay->setText(result);
-
-            } else if (dataType.contains("mpreal") && !dataType.contains("interval")) {
+            }
+        /* -------------------------------------------------
+           2.  TYP  mpreal  (wysoka precyzja)
+           ------------------------------------------------- */
+            else if (dataType.contains("mpreal") &&
+                     !dataType.contains("interval"))
+            {
                 auto A = Parser::parseMatrix<mpfr::mpreal>(matrixAInputs);
                 auto b = Parser::parseVector<mpfr::mpreal>(vectorBInputs);
-                std::vector<mpfr::mpreal> x;
-                if (matrixType.contains("Symetryczna")) {
-                    x = Solver::solveCroutSymmetric(A, b);
-                } else {
-                    x = Solver::solveCroutTridiagonal(A, b);
+
+                auto res = Solver::solveCroutTridiagonal(A, b);   // *** zmiana ***
+                if (radioSymmetric->isChecked())
+                    res = { Solver::solveCroutSymmetric(A,b) , 0 };
+
+                if (res.st != 0) {
+                    resultDisplay->setText(
+                        QString("Układ osobliwy – pivot zerowy w kroku %1")
+                        .arg(res.st));
+                    return;
                 }
+                const auto& x = res.x;
 
                 QString result;
                 for (size_t i = 0; i < x.size(); ++i) {
                     std::stringstream ss;
                     ss.precision(50);
                     ss << std::fixed << x[i];
-                    result += QString("x%1 = %2\n").arg(i + 1).arg(QString::fromStdString(ss.str()));
+                    result += QString("x%1 = %2\n")
+                              .arg(i+1)
+                              .arg(QString::fromStdString(ss.str()));
                 }
                 resultDisplay->setText(result);
-
-            } else if (dataType.contains("interval")) {
+            }
+        /* -------------------------------------------------
+           3.  TYP  interval<mpreal>
+           ------------------------------------------------- */
+            else if (dataType.contains("interval"))
+            {
                 auto A = Parser::parseMatrix<IntervalMP>(matrixAInputs);
                 auto b = Parser::parseVector<IntervalMP>(vectorBInputs);
-                std::vector<IntervalMP> x;
-                if (matrixType.contains("Symetryczna")) {
-                    x = Solver::solveCroutSymmetric(A, b);
-                } else {
-                    x = Solver::solveCroutTridiagonal(A, b);
+
+                auto res = Solver::solveCroutTridiagonal(A, b);   // *** zmiana ***
+                if (radioSymmetric->isChecked())
+                    res = { Solver::solveCroutSymmetric(A,b) , 0 };
+
+                if (res.st != 0) {
+                    resultDisplay->setText(
+                        QString("Układ osobliwy – pivot zerowy w kroku %1")
+                        .arg(res.st));
+                    return;
                 }
+                const auto& x = res.x;
 
                 QString result;
                 for (size_t i = 0; i < x.size(); ++i) {
                     std::stringstream ss;
                     ss.precision(30);
                     ss << "[" << x[i].lower() << ", " << x[i].upper() << "]";
-                    result += QString("x%1 = %2\n").arg(i + 1).arg(QString::fromStdString(ss.str()));
+                    result += QString("x%1 = %2\n")
+                              .arg(i+1)
+                              .arg(QString::fromStdString(ss.str()));
                 }
                 resultDisplay->setText(result);
             }
-        } catch (const std::exception &e) {
+        }
+        catch (const std::exception& e) {
             resultDisplay->setText(QString("Błąd: ") + e.what());
         }
     });
@@ -105,10 +144,15 @@ void MainWindow::setupUI() {
     typeSelector->addItem("Liczby wysokiej precyzji (mpreal)");
     typeSelector->addItem("Przedziały (interval<mpreal>)");
 
-    matrixTypeLabel = new QLabel("Typ macierzy:", this);
-    matrixSelector = new QComboBox(this);
-    matrixSelector->addItem("Symetryczna");
-    matrixSelector->addItem("Trójdiagonalna");
+    QGroupBox *matrixTypeGroup = new QGroupBox("Typ macierzy:", this);
+    radioSymmetric = new QRadioButton("Symetryczna", this);
+    radioTridiagonal = new QRadioButton("Trójdiagonalna", this);
+    radioSymmetric->setChecked(true);
+
+    QVBoxLayout *radioLayout = new QVBoxLayout();
+    radioLayout->addWidget(radioSymmetric);
+    radioLayout->addWidget(radioTridiagonal);
+    matrixTypeGroup->setLayout(radioLayout);
 
     inputHeaderLabel = new QLabel("Dane wejściowe:", this);
     matrixALabel = new QLabel("Macierz A:", this);
@@ -132,6 +176,9 @@ void MainWindow::setupUI() {
     solveButton = new QPushButton("Rozwiąż", this);
     resultDisplay = new QTextEdit(this);
     resultDisplay->setReadOnly(true);
+    QFont monoFont("Courier");
+    monoFont.setStyleHint(QFont::Monospace);
+    resultDisplay->setFont(monoFont);
 
     QHBoxLayout *settingsLayout = new QHBoxLayout();
     settingsLayout->addWidget(matrixSizeLabel);
@@ -140,8 +187,7 @@ void MainWindow::setupUI() {
     settingsLayout->addWidget(dataTypeLabel);
     settingsLayout->addWidget(typeSelector);
     settingsLayout->addSpacing(20);
-    settingsLayout->addWidget(matrixTypeLabel);
-    settingsLayout->addWidget(matrixSelector);
+    settingsLayout->addWidget(matrixTypeGroup);
 
     mainLayout = new QVBoxLayout(this);
     mainLayout->addLayout(settingsLayout);
@@ -172,12 +218,14 @@ void MainWindow::createMatrixInputs(int size) {
         for (int j = 0; j < size; ++j) {
             QLineEdit *input = new QLineEdit(this);
             input->setFixedWidth(60);
+            input->clear();
             matrixAInputs[i][j] = input;
             matrixALayout->addWidget(input, i, j);
         }
 
         QLineEdit *bInput = new QLineEdit(this);
         bInput->setFixedWidth(60);
+        bInput->clear();
         vectorBInputs.push_back(bInput);
         vectorBLayout->addWidget(bInput, i, 0);
     }

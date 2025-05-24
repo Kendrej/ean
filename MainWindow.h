@@ -1,45 +1,54 @@
+// MainWindow.h
 #pragma once
 
 #include <QWidget>
-#include <QLabel>
-#include <QLineEdit>
-#include <QPushButton>
 #include <QSpinBox>
 #include <QComboBox>
+#include <QRadioButton>
+#include <QPushButton>
 #include <QTextEdit>
+#include <QLabel>
+#include <QGridLayout>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
-#include <QGridLayout>
+#include <vector>
 
-class MainWindow : public QWidget {
+class MainWindow : public QWidget
+{
     Q_OBJECT
-
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
 private:
-    QLabel *matrixSizeLabel;
-    QSpinBox *matrixSizeSpinBox;
-    QLabel *dataTypeLabel;
-    QComboBox *typeSelector;
-    QLabel *matrixTypeLabel;
-    QComboBox *matrixSelector;
-    QLabel *inputHeaderLabel;
-    QLabel *matrixALabel;
-    QLabel *vectorBLabel;
-    QPushButton *solveButton;
-    QTextEdit *resultDisplay;
-
-    QVBoxLayout *mainLayout;
-    QHBoxLayout *matrixInputLayout;
-    QGridLayout *matrixALayout;
-    QGridLayout *vectorBLayout;
-
-    QVector<QVector<QLineEdit*>> matrixAInputs;
-    QVector<QLineEdit*> vectorBInputs;
-
     void setupUI();
     void clearMatrixInputs();
     void createMatrixInputs(int size);
+
+    /* --- GUI elementy --- */
+    QLabel      *matrixSizeLabel;
+    QSpinBox    *matrixSizeSpinBox;
+
+    QLabel      *dataTypeLabel;
+    QComboBox   *typeSelector;
+
+    QRadioButton *radioSymmetric;
+    QRadioButton *radioTridiagonal;
+
+    QLabel      *inputHeaderLabel;
+    QLabel      *matrixALabel;
+    QLabel      *vectorBLabel;
+
+    QGridLayout *matrixALayout;
+    QGridLayout *vectorBLayout;
+
+    QHBoxLayout *matrixInputLayout;
+    QVBoxLayout *mainLayout;
+
+    QPushButton *solveButton;
+    QTextEdit   *resultDisplay;
+
+    /* --- pola do wprowadzania liczb --- */
+    std::vector<std::vector<QLineEdit*>> matrixAInputs;
+    std::vector<QLineEdit*>              vectorBInputs;
 };
