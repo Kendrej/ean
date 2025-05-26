@@ -1,11 +1,9 @@
-/* ===========================================================
- *  MainWindow.cpp  –  pełna aktualna wersja
- * ========================================================= */
+
 #include "MainWindow.h"
 #include "Parser.h"
 #include "Solver.h"
 
-#include <QGroupBox>          // ← potrzebny nagłówek
+#include <QGroupBox>       
 #include <stdexcept>
 #include <sstream>
 #include <iomanip>
@@ -24,9 +22,6 @@ using IntervalMP = interval<
         >
 >;
 
-/* -----------------------------------------------------------
-   Pomocnik: „ładny” wykładnik, np.  E-0001
-   ----------------------------------------------------------- */
 static std::string prettifyExp(std::string s)
 {
     auto pos = s.find('E');
@@ -43,6 +38,7 @@ static std::string prettifyExp(std::string s)
 
 MainWindow::MainWindow(QWidget *parent) : QWidget(parent)
 {
+    setWindowTitle("Rozwiązywanie układu równań liciowych metodą Crouta (symetryczna i trójdiagonalna)");
     setupUI();
     createMatrixInputs(3);
 
@@ -156,18 +152,28 @@ MainWindow::MainWindow(QWidget *parent) : QWidget(parent)
                 }
 
                 QString out;
-                for (size_t i=0;i<x.size();++i)
+                for (size_t i = 0; i < x.size(); ++i)
                 {
-                    std::stringstream ssL, ssU;
+                    const auto lo = x[i].lower();        // dolna granica
+                    const auto hi = x[i].upper();        // górna granica
+                    const auto w  = hi - lo;             // ← szerokość (to Twoje „auto w = …”)
+
+                    std::stringstream ssL, ssU, ssW;
                     ssL.setf(std::ios::scientific | std::ios::uppercase);
                     ssU.setf(std::ios::scientific | std::ios::uppercase);
-                    ssL << std::setprecision(13) << x[i].lower();
-                    ssU << std::setprecision(13) << x[i].upper();
-                    out += QString("x[%1] = [%2 , %3]\n")
-                               .arg(i+1)
-                               .arg(QString::fromStdString(prettifyExp(ssL.str())))
-                               .arg(QString::fromStdString(prettifyExp(ssU.str())));
+                    ssW.setf(std::ios::scientific | std::ios::uppercase);
+
+                    ssL << std::setprecision(13) << lo;
+                    ssU << std::setprecision(13) << hi;
+                    ssW << std::setprecision(13) << w;
+
+                    out += QString("x[%1] = [%2 , %3]   szerokość = %4\n")
+                            .arg(i + 1)
+                            .arg(QString::fromStdString(prettifyExp(ssL.str())))
+                            .arg(QString::fromStdString(prettifyExp(ssU.str())))
+                            .arg(QString::fromStdString(prettifyExp(ssW.str())));
                 }
+
                 resultDisplay->setText(out);
             }
         }
