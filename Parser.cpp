@@ -3,7 +3,8 @@
 #include <sstream>
 #include <boost/numeric/interval/rounded_transc.hpp>
 #include <boost/numeric/interval/policies.hpp>
-
+#include "interval.h"
+#include <algorithm>
 using namespace boost::numeric;
 
 // Parsowanie zwykłych typów
@@ -26,15 +27,41 @@ mpreal parseValue<mpreal>(const QString &text) {
 
 // Specjalizacja dla interval<mpreal> w formacie "a,b"
 template<>
-IntervalMP parseValue<IntervalMP>(const QString &text) {
-    std::string s = text.toStdString();
-    size_t sep = s.find(',');
-    if (sep == std::string::npos)
-        throw std::runtime_error("Przedział powinien mieć format a,b");
+IntervalMP parseValue<IntervalMP>(const QString &text)
+{
+    using namespace interval_arithmetic;
 
-    mpreal a(s.substr(0, sep));
-    mpreal b(s.substr(sep + 1));
-    return IntervalMP(a, b);
+    std::string s = text.toStdString();
+
+    /* — policz przecinki — */
+    const std::size_t commas = std::count(s.begin(), s.end(), ',');
+
+    /* 1)  format:  2,2   (przecinek dziesiętny PL) */
+    if (commas == 1 && s.find('.') == std::string::npos)
+    {
+        s[s.find(',')] = '.';                 // zamień , → .
+        auto I = IntRead<mpreal>(s);          // [lew, pra]
+        return IntervalMP(I.a, I.b);
+    }
+
+    /* 2)  format:  a,b   (dwa końce przedziału) */
+    if (commas == 1 && s.find('.') != std::string::npos)
+    {
+        const std::size_t sep = s.find(',');
+        mpreal a(s.substr(0, sep));
+        mpreal b(s.substr(sep + 1));
+        if (a > b) std::swap(a, b);
+        return IntervalMP(a, b);
+    }
+
+    /* 3)  format:  pojedyncza liczba z kropką */
+    if (commas == 0)
+    {
+        auto I = IntRead<mpreal>(s);
+        return IntervalMP(I.a, I.b);
+    }
+
+    throw std::runtime_error("Niepoprawny format przedziału");
 }
 
 template<typename T>
