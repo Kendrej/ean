@@ -30,39 +30,44 @@ template<>
 IntervalMP parseValue<IntervalMP>(const QString &text)
 {
     using namespace interval_arithmetic;
-
     std::string s = text.toStdString();
+    std::size_t commas = std::count(s.begin(), s.end(), ',');
 
-    /* — policz przecinki — */
-    const std::size_t commas = std::count(s.begin(), s.end(), ',');
-
-    /* 1)  format:  2,2   (przecinek dziesiętny PL) */
-    if (commas == 1 && s.find('.') == std::string::npos)
+    // JEŚLI jest dokładnie 1 przecinek → bierzemy dwa końce przedziału
+    if (commas == 1)
     {
-        s[s.find(',')] = '.';                 // zamień , → .
-        auto I = IntRead<mpreal>(s);          // [lew, pra]
-        return IntervalMP(I.a, I.b);
+        // rozbijamy na lewy i prawy fragment łańcucha
+        auto sep = s.find(',');
+        std::string sl = s.substr(0, sep);
+        std::string sr = s.substr(sep + 1);
+
+        // każdą z tych części parsujemy funkcją IntRead<mpreal>,
+        // by otrzymać najwęższy możliwy przedział obejmujący dokładną wartość zapisaną w tekście:
+        auto IL = IntRead<mpreal>(sl);
+        auto IR = IntRead<mpreal>(sr);
+
+        mpreal leftEnd  = IL.a;   // dolna granica IntRead 
+        mpreal rightEnd = IR.b;   // górna granica IntRead
+
+        if (leftEnd > rightEnd)
+            std::swap(leftEnd, rightEnd);
+
+        return IntervalMP(leftEnd, rightEnd);
     }
 
-    /* 2)  format:  a,b   (dwa końce przedziału) */
-    if (commas == 1 && s.find('.') != std::string::npos)
-    {
-        const std::size_t sep = s.find(',');
-        mpreal a(s.substr(0, sep));
-        mpreal b(s.substr(sep + 1));
-        if (a > b) std::swap(a, b);
-        return IntervalMP(a, b);
-    }
-
-    /* 3)  format:  pojedyncza liczba z kropką */
+    // JEŚLI nie ma przecinka → to jest pojedyncza liczba
     if (commas == 0)
     {
         auto I = IntRead<mpreal>(s);
         return IntervalMP(I.a, I.b);
     }
 
+    // w każdym innym przypadku uznajemy format za niepoprawny
     throw std::runtime_error("Niepoprawny format przedziału");
 }
+
+
+
 
 template<typename T>
 std::vector<std::vector<T>> Parser::parseMatrix(const QVector<QVector<QLineEdit*>> &inputs) {

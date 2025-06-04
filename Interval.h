@@ -285,7 +285,7 @@ inline void Interval<T>::IEndsToStrings(string &left, string &right) {
 	mpfr_exp_t exponent;
 	mpfr_init2(rop, precision);
 	char *str = NULL;
-	char *buffer = new char(precision + 3);
+	char *buffer = new char[precision + 3];
 	mpfr_set_ld(rop, this->a, MPFR_RNDD);
 
 	mpfr_get_str(buffer, &exponent, 10, outdigits, rop, MPFR_RNDD);
@@ -1573,7 +1573,7 @@ inline void Interval<mpreal>::IEndsToStrings(string &left, string &right) {
 	mpfr_exp_t exponent;
 	mpfr_init2(rop, precision);
 	char *str = NULL;
-	char *buffer = new char(precision + 3);
+	char *buffer = new char[precision + 3];
 	mpfr_set(rop, this->a.mpfr_ptr(), MPFR_RNDD);
 	mpfr_get_str(buffer, &exponent, 10, outdigits, rop, MPFR_RNDD);
 	str = buffer;

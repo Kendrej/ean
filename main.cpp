@@ -6,8 +6,8 @@ using mpfr::mpreal;
 using namespace interval_arithmetic;
 
 int main(int argc, char *argv[]) {
+    Interval<mpreal>::Initialize();
     mpreal::set_default_prec(256);  // zwiększona precyzja dla wszystkich zmiennych mpreal
-    interval_arithmetic::Interval<mpreal>::Initialize();
 
     QApplication app(argc, argv);
     MainWindow window;

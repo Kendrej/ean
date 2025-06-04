@@ -2,7 +2,7 @@
 #include "MainWindow.h"
 #include "Parser.h"
 #include "Solver.h"
-
+#include "Interval.h"
 #include <QGroupBox>       
 #include <stdexcept>
 #include <sstream>
@@ -13,6 +13,7 @@
 #include <boost/numeric/interval/rounded_transc.hpp>
 #include <boost/numeric/interval/policies.hpp>
 
+using namespace interval_arithmetic;
 using namespace boost::numeric;
 using IntervalMP = interval<
         mpfr::mpreal,
@@ -115,12 +116,15 @@ MainWindow::MainWindow(QWidget *parent) : QWidget(parent)
                 QString out;
                 for (size_t i=0;i<x.size();++i)
                 {
-                    std::stringstream ss;
-                    ss.setf(std::ios::scientific | std::ios::uppercase);
-                    ss << std::setprecision(14) << x[i];
+                    interval_arithmetic::Interval<mpreal> I(x[i], x[i]);
+
+                    std::string L, R;
+                    I.IEndsToStrings(L, R);          // zaokrąglenie na zewnątrz
+
+                    /*  dla liczb pojedynczych L == R, więc wypisujemy jedno   */
                     out += QString("x[%1] = %2\n")
-                              .arg(i+1)
-                              .arg(QString::fromStdString(prettifyExp(ss.str())));
+                            .arg(i + 1)
+                            .arg(QString::fromStdString(L));
                 }
                 resultDisplay->setText(out);
             }
@@ -213,7 +217,7 @@ void MainWindow::setupUI() {
 
     inputHeaderLabel = new QLabel("Dane wejściowe:", this);
     matrixALabel = new QLabel("Macierz A:", this);
-    vectorBLabel = new QLabel("Macierz B:", this);
+    vectorBLabel = new QLabel("Wektor B:", this);
 
     matrixALayout = new QGridLayout();
     vectorBLayout = new QGridLayout();
