@@ -158,9 +158,11 @@ MainWindow::MainWindow(QWidget *parent) : QWidget(parent)
                 QString out;
                 for (size_t i = 0; i < x.size(); ++i)
                 {
-                    const auto lo = x[i].lower();        // dolna granica
-                    const auto hi = x[i].upper();        // górna granica
-                    const auto w  = hi - lo;             // ← szerokość (to Twoje „auto w = …”)
+                    IntervalMP canonical = hull(x[i], x[i]);   // z naszego Interval.h
+                    auto lo = canonical.lower();
+                    auto hi = canonical.upper();
+                    auto w  = hi - lo;
+
 
                     std::stringstream ssL, ssU, ssW;
                     ssL.setf(std::ios::scientific | std::ios::uppercase);
