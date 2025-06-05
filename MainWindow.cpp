@@ -157,35 +157,33 @@ MainWindow::MainWindow(QWidget *parent) : QWidget(parent)
 
                 QString out;
                 /* ---------- poprawione wypisywanie przedziałów ------------ */
-auto toStr = [](const mpreal &v) {
-    std::string L,R;
-    interval_arithmetic::Interval<mpreal>(v,v).IEndsToStrings(L,R);
-    return L;                         // L == R dla degeneratu
-};
+                auto toStr = [](const mpreal &v) {
+                    std::string L,R;
+                    interval_arithmetic::Interval<mpreal>(v,v).IEndsToStrings(L,R);
+                    return L;                         // L == R dla degeneratu
+                };
 
-for (size_t i = 0; i < x.size(); ++i)
-{
-    /* 1. końce RNDD/RNDU – ZERO hull()! -------------------- */
-    mpreal lo = x[i].lower();         // dokładnie RNDD
-    mpreal hi = x[i].upper();         // dokładnie RNDU
+                for (size_t i = 0; i < x.size(); ++i)
+                {
+                    /* 1. końce RNDD/RNDU – ZERO hull()! -------------------- */
+                    mpreal lo = x[i].lower();         // dokładnie RNDD
+                    mpreal hi = x[i].upper();         // dokładnie RNDU
 
-    /* 2. jeżeli przedział wąski →  „wyrównaj” do ładnej liczby */
-    if (hi - lo < mpreal("1e-20"))
-    {
-        lo = hi = round(lo*4)/4;      // przyciąga do k/4
-    }
+                    /* 2. jeżeli przedział wąski →  „wyrównaj” do ładnej liczby */
+                    if (hi - lo < mpreal("1e-20"))
+                    {
+                        lo = hi = round(lo*4)/4;      // przyciąga do k/4
+                    }
 
-    mpreal wd = hi - lo;              // szerokość
+                    mpreal wd = hi - lo;              // szerokość
 
-    /* 3. drukujemy pełne 17 cyfr w formacie E±nn ------------ */
-    out += QString("x[%1] = [%2 , %3]   szerokość = %4\n")
-            .arg(i + 1)
-            .arg(QString::fromStdString(toStr(lo)))
-            .arg(QString::fromStdString(toStr(hi)))
-            .arg(QString::fromStdString(toStr(wd)));
-}
-
-
+                    /* 3. drukujemy pełne 17 cyfr w formacie E±nn ------------ */
+                    out += QString("x[%1] = [%2 , %3]   szerokość = %4\n")
+                            .arg(i + 1)
+                            .arg(QString::fromStdString(toStr(lo)))
+                            .arg(QString::fromStdString(toStr(hi)))
+                            .arg(QString::fromStdString(toStr(wd)));
+                }
                 resultDisplay->setText(out);
             }
         }
